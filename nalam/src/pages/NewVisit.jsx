@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // CHANGED
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBabies } from '../utils/storage';
 import { apiCall } from '../utils/api';
@@ -11,49 +11,97 @@ export default function NewVisit() {
     const { t } = useLanguage();
     const [baby, setBaby] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [showTypedFallback, setShowTypedFallback] = useState(false); // ADDED
+    const [typedText, setTypedText] = useState(''); // ADDED
+    const [fallbackStatus, setFallbackStatus] = useState(''); // ADDED
     const { isListening, transcript, error, startListening, stopListening } = useSpeechRecognition();
+    const recognitionTimeoutRef = useRef(null); // ADDED
+    const transcriptRef = useRef(''); // ADDED
 
     useEffect(() => {
         const b = getBabies().find(x => x.id === babyId);
         setBaby(b);
     }, [babyId]);
 
+    useEffect(() => { // ADDED
+        transcriptRef.current = transcript; // ADDED
+    }, [transcript]); // ADDED
+
+    useEffect(() => { // ADDED
+        return () => { // ADDED
+            if (recognitionTimeoutRef.current) { // ADDED
+                clearTimeout(recognitionTimeoutRef.current); // ADDED
+                recognitionTimeoutRef.current = null; // ADDED
+            } // ADDED
+        }; // ADDED
+    }, []); // ADDED
+
     if (!baby) return null;
+
+    const submitConcernText = async (inputText) => { // ADDED
+        const finalText = (inputText || '').trim(); // ADDED
+        if (!finalText) return; // ADDED
+        setProcessing(true); // ADDED
+        try { // ADDED
+            const res = await apiCall('/audio-text', { // ADDED
+                text: finalText, // ADDED
+                baby_context: { visit_day: 3, birth_weight: baby.weight } // ADDED
+            }); // ADDED
+
+            if (!res.error && !res.parse_error) { // ADDED
+                const flags = {}; // ADDED
+                if (res.feeding_concern) flags.feeding = true; // ADDED
+                if (res.activity_concern) flags.activity = true; // ADDED
+                if (res.warmth_concern) flags.warmth = true; // ADDED
+                if (res.breathing_concern) flags.breathing = true; // ADDED
+                sessionStorage.setItem(`flags_${babyId}`, JSON.stringify(flags)); // ADDED
+            } // ADDED
+        } catch (err) { // ADDED
+            console.log("Offline or API Error:", err); // ADDED
+        } // ADDED
+        setProcessing(false); // ADDED
+    }; // ADDED
+
+    const handleTypedSubmit = async () => { // ADDED
+        await submitConcernText(typedText); // ADDED
+    }; // ADDED
 
     const handleRecordToggle = async () => {
         if (isListening) {
+            if (recognitionTimeoutRef.current) { // ADDED
+                clearTimeout(recognitionTimeoutRef.current); // ADDED
+                recognitionTimeoutRef.current = null; // ADDED
+            } // ADDED
             stopListening();
 
             // Artificial delay to let final transcription result settle
             setTimeout(async () => {
-                if (transcript.trim().length > 0) {
-                    setProcessing(true);
-                    try {
-                        // We now securely POST TEXT instead of large raw Audio Files
-                        const res = await apiCall('/audio-text', {
-                            text: transcript,
-                            baby_context: { visit_day: 3, birth_weight: baby.weight }
-                        });
-
-                        if (!res.error && !res.parse_error) {
-                            const flags = {};
-                            if (res.feeding_concern) flags.feeding = true;
-                            if (res.activity_concern) flags.activity = true;
-                            if (res.warmth_concern) flags.warmth = true;
-                            if (res.breathing_concern) flags.breathing = true;
-
-                            // Cache flags so Checklist.jsx can read them locally
-                            sessionStorage.setItem(`flags_${babyId}`, JSON.stringify(flags));
-                        }
-                    } catch (err) {
-                        console.log("Offline or API Error:", err);
-                    }
-                    setProcessing(false);
+                const latestTranscript = (transcriptRef.current || '').trim(); // ADDED
+                if (latestTranscript.length > 0) { // CHANGED
+                    setShowTypedFallback(false); // ADDED
+                    setFallbackStatus(''); // ADDED
+                    await submitConcernText(latestTranscript); // CHANGED
+                } else { // ADDED
+                    setShowTypedFallback(true); // ADDED
                 }
             }, 500);
 
         } else {
+            setShowTypedFallback(false); // ADDED
+            setFallbackStatus(''); // ADDED
             startListening();
+            if (recognitionTimeoutRef.current) { // ADDED
+                clearTimeout(recognitionTimeoutRef.current); // ADDED
+            } // ADDED
+            recognitionTimeoutRef.current = setTimeout(() => { // ADDED
+                const latestTranscript = (transcriptRef.current || '').trim(); // ADDED
+                if (latestTranscript.length === 0) { // ADDED
+                    stopListening(); // ADDED
+                    setShowTypedFallback(true); // ADDED
+                    setFallbackStatus('குரல் பதிவு கிடைக்கவில்லை. தயவுசெய்து உங்கள் கவலையை টাইப் செய்யவும்.\nNo speech transcript received. Please type the mother\'s concern.'); // ADDED
+                } // ADDED
+                recognitionTimeoutRef.current = null; // ADDED
+            }, 8000); // ADDED
         }
     };
 
@@ -89,6 +137,30 @@ export default function NewVisit() {
                     <svg className="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 )}
             </button>
+
+            {showTypedFallback && ( // ADDED
+                <div className="w-full max-w-sm mb-6">{/* ADDED */}
+                    <p className="text-sm font-semibold text-brand-text mb-1">அம்மாவின் கவலையை கீழே টাইப் செய்யவும்.</p> {/* ADDED */} 
+                    <p className="text-sm text-gray-600 mb-3">Please type the mother's concern below.</p> {/* ADDED */} 
+                    {fallbackStatus ? ( // ADDED
+                        <p className="text-sm text-red-500 font-medium whitespace-pre-line mb-3">{fallbackStatus}</p> /* ADDED */
+                    ) : null} {/* ADDED */} 
+                    <textarea /* ADDED */
+                        value={typedText} // ADDED
+                        onChange={(e) => setTypedText(e.target.value)} // ADDED
+                        rows={4} // ADDED
+                        className="w-full p-3 border rounded-xl bg-white text-gray-800 outline-none mb-3" // ADDED
+                        placeholder="அம்மாவின் கவலை என்ன? / What is the mother's concern?" // ADDED
+                    /> {/* ADDED */}
+                    <button /* ADDED */
+                        onClick={handleTypedSubmit} // ADDED
+                        disabled={processing || typedText.trim().length === 0} // ADDED
+                        className={`w-full p-3 rounded-xl font-bold text-white ${processing || typedText.trim().length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-brand-green active:bg-green-700'} transition`} // ADDED
+                    > {/* ADDED */}
+                        உரையை சமர்ப்பிக்கவும் / Submit typed concern {/* ADDED */}
+                    </button> {/* ADDED */}
+                </div> {/* ADDED */}
+            )} // ADDED
 
             <h3 className="text-xl font-bold text-brand-text mb-6">
                 {isListening ? t.recording : processing ? "AI Processing..." : t.speakInstruction}

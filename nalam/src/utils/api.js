@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const BASE_URL = ''; // Relative path for Kaggle hosted flask app
 
 export const apiCall = async (endpoint, data) => {
@@ -30,4 +32,37 @@ export const checkHealth = async () => {
     } catch {
         return { status: 'offline' };
     }
-}
+};
+
+export const useConnectionStatus = () => {
+    const [connectionStatus, setConnectionStatus] = useState('checking');
+
+    useEffect(() => {
+        let mounted = true;
+
+        const runHealthCheck = async () => {
+            try {
+                const health = await checkHealth();
+                if (!mounted) return;
+                if (health?.status && health.status !== 'offline') {
+                    setConnectionStatus('connected');
+                } else {
+                    setConnectionStatus('offline');
+                }
+            } catch {
+                if (!mounted) return;
+                setConnectionStatus('offline');
+            }
+        };
+
+        runHealthCheck();
+        const intervalId = setInterval(runHealthCheck, 30000);
+
+        return () => {
+            mounted = false;
+            clearInterval(intervalId);
+        };
+    }, []);
+
+    return connectionStatus;
+};

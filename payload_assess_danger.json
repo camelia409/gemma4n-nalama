@@ -1,0 +1,14 @@
+{
+  "baby": {
+    "name": "Baby Priya",
+    "weight": "2.8",
+    "age_days": 3,
+    "premature": false
+  },
+  "answers": {
+    "feeding": false,
+    "activity": true,
+    "warmth": false,
+    "breathing": true
+  }
+}
