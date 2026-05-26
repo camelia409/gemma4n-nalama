@@ -48,14 +48,16 @@ export default function NewVisit() {
                 baby_context: { visit_day: 3, birth_weight: baby.weight } // ADDED
             }); // ADDED
 
-            if (!res.error && !res.parse_error) { // ADDED
-                const flags = {}; // ADDED
-                if (res.feeding_concern) flags.feeding = true; // ADDED
-                if (res.activity_concern) flags.activity = true; // ADDED
-                if (res.warmth_concern) flags.warmth = true; // ADDED
-                if (res.breathing_concern) flags.breathing = true; // ADDED
-                sessionStorage.setItem(`flags_${babyId}`, JSON.stringify(flags)); // ADDED
-            } // ADDED
+            if (!res.error && !res.parse_error) {
+                const flags = {};
+                if (res.feeding_concern) flags.feeding = true;
+                if (res.activity_concern) flags.activity = true;
+                if (res.warmth_concern) flags.warmth = true;
+                if (res.breathing_concern) flags.breathing = true;
+                sessionStorage.setItem(`flags_${babyId}`, JSON.stringify(flags));
+                // Remember the transcript so the next screen can show "Mother said: ..."
+                sessionStorage.setItem(`transcript_${babyId}`, finalText);
+            }
         } catch (err) { // ADDED
             console.log("Offline or API Error:", err); // ADDED
         } // ADDED

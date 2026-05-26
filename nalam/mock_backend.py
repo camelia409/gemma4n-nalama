@@ -170,7 +170,15 @@ def assess():
 
         # Rule: True = normal, False = danger sign
         danger_signs_found = [k for k, v in answers.items() if v is False]
-        is_safe = len(danger_signs_found) == 0
+        # Free-text concerns the ASHA added beyond the 4 standard items
+        extra_concerns = data.get('extra_concerns') or []
+        if not isinstance(extra_concerns, list):
+            extra_concerns = []
+        extra_concerns = [str(c).strip() for c in extra_concerns if str(c).strip()]
+        # Any extra concern is treated as unsafe (conservative default)
+        is_safe = (len(danger_signs_found) == 0) and (len(extra_concerns) == 0)
+        # Surface extras in danger_signs so result + counselling see them
+        danger_signs_found = danger_signs_found + extra_concerns
 
         gemma = None
         if is_safe:
@@ -199,14 +207,19 @@ def assess():
                 tamil = _VISIT_TAMIL[day]
                 english = _VISIT_ENGLISH[day]
         else:
-            signs_t = _join_tamil([_DANGER_SIGN_TAMIL.get(s, s) for s in danger_signs_found])
-            signs_e = ", ".join([_DANGER_SIGN_ENGLISH.get(s, s) for s in danger_signs_found])
+            std_signs = [s for s in danger_signs_found if s in _DANGER_SIGN_TAMIL]
+            signs_t = _join_tamil([_DANGER_SIGN_TAMIL[s] for s in std_signs])
+            signs_e = ", ".join([_DANGER_SIGN_ENGLISH[s] for s in std_signs]) if std_signs else "none from the standard checklist"
+            extras_e = "; ".join(extra_concerns) if extra_concerns else ""
+            extras_clause = (
+                f" The ASHA also observed: {extras_e}. Incorporate these into the message." if extras_e else ""
+            )
             prompt = (
-                f"You are a Tamil HBNC assistant. A newborn on day {age_days} has these danger signs: "
-                f"{signs_e}. Generate a calm but urgent message in BOTH Tamil and English telling the "
-                f"mother what was found and that the baby must be taken to the PHC immediately. "
-                f"Mention calling 108 if needed. Tamil: simple, calm, no panic. English: plain prose, "
-                f"no markdown. Maximum 3 sentences each. "
+                f"You are a Tamil HBNC assistant. A newborn on day {age_days} has these danger signs from "
+                f"the standard checklist: {signs_e}.{extras_clause} "
+                f"Generate a calm but urgent message in BOTH Tamil and English telling the mother what was "
+                f"found and that the baby must be taken to the PHC immediately. Mention calling 108 if needed. "
+                f"Tamil: simple, calm, no panic. English: plain prose, no markdown. Maximum 3 sentences each. "
                 f"Return JSON with keys: tamil_message, english_message."
             )
             gemma = _gemma_json(prompt, ["tamil_message", "english_message"])
@@ -214,13 +227,16 @@ def assess():
                 tamil = gemma["tamil_message"]
                 english = gemma["english_message"]
             else:
+                extras_t = (" மற்றும் ASHA கூறியது: " + "; ".join(extra_concerns) + ".") if extra_concerns else ""
+                extras_eng = (f" Additional observations: {extras_e}." if extras_e else "")
                 tamil = (
-                    f"{signs_t}. இது அபாய அறிகுறி. குழந்தையை உடனே PHC-க்கு கொண்டு செல்லுங்கள் — "
-                    "தாமதம் வேண்டாம். தேவைப்பட்டால் 108 ஆம்புலன்ஸை அழைக்கவும்."
+                    f"{signs_t or 'குழந்தையில் கவலை'}.{extras_t} இது அபாய அறிகுறி. "
+                    "குழந்தையை உடனே PHC-க்கு கொண்டு செல்லுங்கள் — தாமதம் வேண்டாம். "
+                    "தேவைப்பட்டால் 108 ஆம்புலன்ஸை அழைக்கவும்."
                 )
                 english = (
-                    f"Danger signs detected ({signs_e}). Refer the baby to the PHC immediately — "
-                    "do not delay. Call 108 if needed."
+                    f"Danger signs detected ({signs_e}).{extras_eng} Refer the baby to the PHC "
+                    "immediately — do not delay. Call 108 if needed."
                 )
 
         return jsonify({
@@ -247,7 +263,12 @@ def mother_health():
         data = request.get_json(silent=True) or {}
         answers = data.get('answers') or {}
         danger_signs_found = [k for k, v in answers.items() if v is True]
-        is_safe = len(danger_signs_found) == 0
+        extra_concerns = data.get('extra_concerns') or []
+        if not isinstance(extra_concerns, list):
+            extra_concerns = []
+        extra_concerns = [str(c).strip() for c in extra_concerns if str(c).strip()]
+        is_safe = (len(danger_signs_found) == 0) and (len(extra_concerns) == 0)
+        danger_signs_found = danger_signs_found + extra_concerns
 
         if is_safe:
             tamil = (
@@ -256,11 +277,16 @@ def mother_health():
             )
             english = "No maternal danger signs detected. Encourage rest, nourishing food, and plenty of fluids."
         else:
-            signs_e = ", ".join([_MOTHER_DANGER_ENGLISH.get(s, s) for s in danger_signs_found])
+            std_signs = [s for s in danger_signs_found if s in _MOTHER_DANGER_TAMIL]
+            signs_e = ", ".join([_MOTHER_DANGER_ENGLISH[s] for s in std_signs]) if std_signs else "none from the standard checklist"
+            extras_e = "; ".join(extra_concerns) if extra_concerns else ""
+            extras_clause = (
+                f" The ASHA also observed about the mother: {extras_e}. Incorporate these." if extras_e else ""
+            )
             prompt = (
                 f"You are a Tamil HBNC assistant. The mother (postpartum) shows these danger signs: "
-                f"{signs_e}. Generate a calm but urgent message in BOTH Tamil and English telling the "
-                f"family that she needs immediate care at the PHC. Mention calling 108 if needed. "
+                f"{signs_e}.{extras_clause} Generate a calm but urgent message in BOTH Tamil and English "
+                f"telling the family that she needs immediate care at the PHC. Mention calling 108 if needed. "
                 f"Tamil: simple, calm. English: plain prose, no markdown. Max 3 sentences each. "
                 f"Return JSON with keys: tamil_message, english_message."
             )
@@ -269,14 +295,15 @@ def mother_health():
                 tamil = gemma["tamil_message"]
                 english = gemma["english_message"]
             else:
-                signs_t = _join_tamil([_MOTHER_DANGER_TAMIL.get(s, s) for s in danger_signs_found])
+                signs_t = _join_tamil([_MOTHER_DANGER_TAMIL[s] for s in std_signs]) or "கவலை அறிகுறிகள்"
+                extras_t = (" ASHA கூறியது: " + "; ".join(extra_concerns) + ".") if extra_concerns else ""
                 tamil = (
-                    f"தாய்க்கு {signs_t} உள்ளது. இது அவசர நிலை. உடனே PHC-க்கு "
+                    f"தாய்க்கு {signs_t} உள்ளது.{extras_t} இது அவசர நிலை. உடனே PHC-க்கு "
                     "அழைத்து செல்லவும். தேவைப்பட்டால் 108 அழைக்கவும்."
                 )
                 english = (
-                    f"Maternal danger signs present ({signs_e}). This is urgent. "
-                    "Refer the mother to the PHC immediately. Call 108 if needed."
+                    f"Maternal danger signs present ({signs_e}).{(' ' + extras_e + '.') if extras_e else ''} "
+                    "This is urgent. Refer the mother to the PHC immediately. Call 108 if needed."
                 )
 
         return jsonify({
@@ -401,16 +428,32 @@ def counselling():
         else:
             action = "HOME_CARE"
 
-        signs_e = ", ".join([_DANGER_SIGN_ENGLISH.get(s, s) for s in danger_signs]) if danger_signs else "none"
+        # Split standard danger signs from free-text extras in danger_signs
+        std_baby_signs = [s for s in danger_signs if s in _DANGER_SIGN_ENGLISH]
+        extra_baby = [s for s in danger_signs if s not in _DANGER_SIGN_ENGLISH]
+        signs_e = ", ".join([_DANGER_SIGN_ENGLISH[s] for s in std_baby_signs]) if std_baby_signs else "none"
+
+        mother_extras = []
+        mother_danger_list = mother_result.get('danger_signs') or []
+        if isinstance(mother_danger_list, list):
+            mother_extras = [s for s in mother_danger_list if s not in _MOTHER_DANGER_ENGLISH]
         mother_state = "safe" if mother_is_safe else "has danger signs"
+
+        extras_clause = ""
+        if extra_baby:
+            extras_clause += f" The ASHA additionally observed about the baby: {'; '.join(extra_baby)}."
+        if mother_extras:
+            extras_clause += f" The ASHA additionally observed about the mother: {'; '.join(mother_extras)}."
 
         prompt = (
             f"You are a Tamil HBNC assistant. Generate a counselling script in BOTH Tamil and English. "
             f"Context: day-{age_days} postnatal visit, baby weight {weight_kg} kg, "
-            f"premature={premature}, baby danger signs: {signs_e}, mother is {mother_state}. "
+            f"premature={premature}, baby standard danger signs: {signs_e}, mother is {mother_state}."
+            f"{extras_clause} "
             f"The clinical action taken is: {action}. "
             f"Tailor the message to the action: HOME_CARE → reassuring care advice; "
             f"REFER_PHC → calm urgent referral; REFER_108 → emergency, call ambulance. "
+            f"If extras were observed, weave them into the counselling so the mother knows what to watch. "
             f"Tamil: simple, village-friendly. English: plain prose, no bullets or markdown. "
             f"Max 4 sentences each. "
             f"Return JSON with keys: tamil_counselling_text, english_counselling_text."
