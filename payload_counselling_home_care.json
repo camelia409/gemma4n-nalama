@@ -1,0 +1,15 @@
+{
+  "baby": {
+    "weight": "2.8",
+    "age_days": 3,
+    "premature": false
+  },
+  "danger_signs": [],
+  "is_safe": true,
+  "mother_result": {
+    "is_safe": true,
+    "danger_signs": [],
+    "tamil_message": "ok",
+    "english_message": "ok"
+  }
+}

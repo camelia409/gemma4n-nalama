@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: nalam-api
+    runtime: python
+    plan: free
+    rootDir: nalam
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT mock_backend:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GEMINI_API_KEY
+        sync: false   # paste your Google AI Studio API key in the Render dashboard
+      - key: GEMMA_MODEL
+        value: gemma-3-12b-it
+      - key: FRONTEND_ORIGIN
+        sync: false   # set this in the Render dashboard after Vercel gives you a URL

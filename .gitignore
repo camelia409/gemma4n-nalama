@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.local
+
+# Node / Vite build output (also ignored inside nalam/)
+node_modules/
+dist/
+dist.zip
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
