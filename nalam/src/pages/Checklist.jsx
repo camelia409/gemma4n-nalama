@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBabies, saveVisit } from '../utils/storage';
+import { getBabies, saveVisit, computeAgeDays } from '../utils/storage';
 import { apiCall } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -70,9 +70,13 @@ export default function Checklist() {
     const handleSubmit = async () => {
         setLoading(true);
 
+        // Visit day: ASHA's override from the voice screen, else compute from DOB.
+        const storedDay = parseInt(sessionStorage.getItem(`visit_day_${babyId}`), 10);
+        const ageDays = Number.isFinite(storedDay) ? storedDay : computeAgeDays(baby?.dob);
+
         const visitData = {
             babyId,
-            day: '3',
+            day: ageDays,
             answers,
             transcript,
             extra_concerns: extraConcerns,
@@ -81,7 +85,7 @@ export default function Checklist() {
 
         try {
             const result = await apiCall('/assess', {
-                baby,
+                baby: { ...baby, age_days: ageDays },
                 answers,
                 extra_concerns: extraConcerns,
             });

@@ -55,12 +55,9 @@ export default function Home() {
                 <p className="text-xs">This is a decision-support tool. Final clinical judgment belongs to the healthcare professional.</p>
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-gray-50 via-white to-transparent max-w-[430px] mx-auto space-y-3 pb-8 z-10">
+            <div className="fixed bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-gray-50 via-white to-transparent max-w-[430px] mx-auto pb-8 z-10">
                 <button onClick={() => navigate('/new-baby')} className="btn btn-primary drop-shadow-md">
                     {t.newBaby}
-                </button>
-                <button className="btn btn-outline bg-white/80 backdrop-blur-sm">
-                    {t.newVisit}
                 </button>
             </div>
         </div>

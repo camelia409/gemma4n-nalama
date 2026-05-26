@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'; // CHANGED
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBabies } from '../utils/storage';
+import { getBabies, computeAgeDays } from '../utils/storage';
 import { apiCall } from '../utils/api';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,9 +11,10 @@ export default function NewVisit() {
     const { t } = useLanguage();
     const [baby, setBaby] = useState(null);
     const [processing, setProcessing] = useState(false);
-    const [showTypedFallback, setShowTypedFallback] = useState(false); // ADDED
-    const [typedText, setTypedText] = useState(''); // ADDED
-    const [fallbackStatus, setFallbackStatus] = useState(''); // ADDED
+    const [visitDay, setVisitDay] = useState(3);
+    const [showTypedFallback, setShowTypedFallback] = useState(false);
+    const [typedText, setTypedText] = useState('');
+    const [fallbackStatus, setFallbackStatus] = useState('');
     const { isListening, transcript, error, startListening, stopListening } = useSpeechRecognition();
     const recognitionTimeoutRef = useRef(null); // ADDED
     const transcriptRef = useRef(''); // ADDED
@@ -21,6 +22,7 @@ export default function NewVisit() {
     useEffect(() => {
         const b = getBabies().find(x => x.id === babyId);
         setBaby(b);
+        if (b) setVisitDay(computeAgeDays(b.dob));
     }, [babyId]);
 
     useEffect(() => { // ADDED
@@ -45,7 +47,7 @@ export default function NewVisit() {
         try { // ADDED
             const res = await apiCall('/audio-text', { // ADDED
                 text: finalText, // ADDED
-                baby_context: { visit_day: 3, birth_weight: baby.weight } // ADDED
+                baby_context: { visit_day: visitDay, birth_weight: baby.weight }
             }); // ADDED
 
             if (!res.error && !res.parse_error) {
@@ -57,6 +59,7 @@ export default function NewVisit() {
                 sessionStorage.setItem(`flags_${babyId}`, JSON.stringify(flags));
                 // Remember the transcript so the next screen can show "Mother said: ..."
                 sessionStorage.setItem(`transcript_${babyId}`, finalText);
+                sessionStorage.setItem(`visit_day_${babyId}`, String(visitDay));
             }
         } catch (err) { // ADDED
             console.log("Offline or API Error:", err); // ADDED
@@ -108,6 +111,7 @@ export default function NewVisit() {
     };
 
     const skipToChecklist = () => {
+        sessionStorage.setItem(`visit_day_${babyId}`, String(visitDay));
         navigate(`/visit/${babyId}/checklist`);
     };
 
@@ -115,12 +119,21 @@ export default function NewVisit() {
         <div className="p-6 min-h-screen bg-gray-50 flex flex-col justify-center items-center">
             <div className="w-full max-w-sm bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
                 <h2 className="text-2xl font-bold text-gray-800">{baby.name}</h2>
-                <p className="text-gray-500">{t.visitDay}</p>
-                <select className="mt-2 w-full p-3 border rounded-xl bg-gray-50 text-lg font-medium text-gray-700 outline-none">
-                    <option>Day 3</option>
-                    <option>Day 7</option>
-                    <option>Day 14</option>
-                </select>
+                <p className="text-gray-500 mt-1">{t.visitDay}</p>
+                <div className="flex items-center gap-2 mt-2">
+                    <span className="text-lg font-medium text-gray-700">{t.day}</span>
+                    <input
+                        type="number"
+                        min="0"
+                        max="60"
+                        value={visitDay}
+                        onChange={e => setVisitDay(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-20 p-2 border rounded-lg bg-gray-50 text-lg font-bold text-brand-green text-center outline-none focus:border-brand-green"
+                    />
+                    <span className="text-xs text-gray-400 ml-2">
+                        (auto from DOB: {computeAgeDays(baby.dob)})
+                    </span>
+                </div>
             </div>
 
             <button
