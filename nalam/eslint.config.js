@@ -29,6 +29,10 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // This is a plain (non-TypeScript) React app that does not use runtime
+      // prop-types anywhere. Enabling the rule for only a couple of components
+      // would be inconsistent, so it is disabled project-wide.
+      'react/prop-types': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
