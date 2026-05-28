@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBabies, saveVisit, computeAgeDays } from '../utils/storage';
+import { getBabies, saveVisit, computeAgeDays, hasConsent } from '../utils/storage';
 import { apiCall } from '../utils/api';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function Checklist() {
     const { babyId } = useParams();
     const navigate = useNavigate();
-    const { t, lang } = useLanguage();
+    const { t } = useLanguage();
     const [baby, setBaby] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -88,10 +88,11 @@ export default function Checklist() {
                 baby: { ...baby, age_days: ageDays },
                 answers,
                 extra_concerns: extraConcerns,
+                consent_given: hasConsent(),
             });
             const saved = saveVisit({ ...visitData, result });
             navigate(`/mother-checklist/${saved.id}`);
-        } catch (err) {
+        } catch {
             // Offline fallback
             const isSafe = Object.values(answers).every(v => v === true) && extraConcerns.length === 0;
             const result = {
@@ -103,7 +104,7 @@ export default function Checklist() {
                     ? "Observe at home. Return in 2 days."
                     : "Refer to PHC immediately.",
                 danger_signs: isSafe ? [] : [
-                    ...Object.entries(answers).filter(([_, v]) => v === false).map(([k]) => k),
+                    ...Object.entries(answers).filter(([, v]) => v === false).map(([k]) => k),
                     ...extraConcerns,
                 ],
                 isFallback: true,
@@ -135,7 +136,7 @@ export default function Checklist() {
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">{t.motherSaid}</p>
                 {transcript ? (
-                    <p className="text-base text-brand-text italic">"{transcript}"</p>
+                    <p className="text-base text-brand-text italic">&ldquo;{transcript}&rdquo;</p>
                 ) : (
                     <p className="text-base text-gray-400">{t.noConcernsSpoken}</p>
                 )}

@@ -16,8 +16,8 @@ export default function NewVisit() {
     const [typedText, setTypedText] = useState('');
     const [fallbackStatus, setFallbackStatus] = useState('');
     const { isListening, transcript, error, startListening, stopListening } = useSpeechRecognition();
-    const recognitionTimeoutRef = useRef(null); // ADDED
-    const transcriptRef = useRef(''); // ADDED
+    const recognitionTimeoutRef = useRef(null);
+    const transcriptRef = useRef('');
 
     useEffect(() => {
         const b = getBabies().find(x => x.id === babyId);
@@ -25,30 +25,30 @@ export default function NewVisit() {
         if (b) setVisitDay(computeAgeDays(b.dob));
     }, [babyId]);
 
-    useEffect(() => { // ADDED
-        transcriptRef.current = transcript; // ADDED
-    }, [transcript]); // ADDED
+    useEffect(() => {
+        transcriptRef.current = transcript;
+    }, [transcript]);
 
-    useEffect(() => { // ADDED
-        return () => { // ADDED
-            if (recognitionTimeoutRef.current) { // ADDED
-                clearTimeout(recognitionTimeoutRef.current); // ADDED
-                recognitionTimeoutRef.current = null; // ADDED
-            } // ADDED
-        }; // ADDED
-    }, []); // ADDED
+    useEffect(() => {
+        return () => {
+            if (recognitionTimeoutRef.current) {
+                clearTimeout(recognitionTimeoutRef.current);
+                recognitionTimeoutRef.current = null;
+            }
+        };
+    }, []);
 
     if (!baby) return null;
 
-    const submitConcernText = async (inputText) => { // ADDED
-        const finalText = (inputText || '').trim(); // ADDED
-        if (!finalText) return; // ADDED
-        setProcessing(true); // ADDED
-        try { // ADDED
-            const res = await apiCall('/audio-text', { // ADDED
-                text: finalText, // ADDED
+    const submitConcernText = async (inputText) => {
+        const finalText = (inputText || '').trim();
+        if (!finalText) return;
+        setProcessing(true);
+        try {
+            const res = await apiCall('/audio-text', {
+                text: finalText,
                 baby_context: { visit_day: visitDay, birth_weight: baby.weight }
-            }); // ADDED
+            });
 
             if (!res.error && !res.parse_error) {
                 const flags = {};
@@ -61,52 +61,52 @@ export default function NewVisit() {
                 sessionStorage.setItem(`transcript_${babyId}`, finalText);
                 sessionStorage.setItem(`visit_day_${babyId}`, String(visitDay));
             }
-        } catch (err) { // ADDED
-            console.log("Offline or API Error:", err); // ADDED
-        } // ADDED
-        setProcessing(false); // ADDED
-    }; // ADDED
+        } catch (err) {
+            console.log("Offline or API Error:", err);
+        }
+        setProcessing(false);
+    };
 
-    const handleTypedSubmit = async () => { // ADDED
-        await submitConcernText(typedText); // ADDED
-    }; // ADDED
+    const handleTypedSubmit = async () => {
+        await submitConcernText(typedText);
+    };
 
     const handleRecordToggle = async () => {
         if (isListening) {
-            if (recognitionTimeoutRef.current) { // ADDED
-                clearTimeout(recognitionTimeoutRef.current); // ADDED
-                recognitionTimeoutRef.current = null; // ADDED
-            } // ADDED
+            if (recognitionTimeoutRef.current) {
+                clearTimeout(recognitionTimeoutRef.current);
+                recognitionTimeoutRef.current = null;
+            }
             stopListening();
 
             // Artificial delay to let final transcription result settle
             setTimeout(async () => {
-                const latestTranscript = (transcriptRef.current || '').trim(); // ADDED
-                if (latestTranscript.length > 0) { // CHANGED
-                    setShowTypedFallback(false); // ADDED
-                    setFallbackStatus(''); // ADDED
-                    await submitConcernText(latestTranscript); // CHANGED
-                } else { // ADDED
-                    setShowTypedFallback(true); // ADDED
+                const latestTranscript = (transcriptRef.current || '').trim();
+                if (latestTranscript.length > 0) {
+                    setShowTypedFallback(false);
+                    setFallbackStatus('');
+                    await submitConcernText(latestTranscript);
+                } else {
+                    setShowTypedFallback(true);
                 }
             }, 500);
 
         } else {
-            setShowTypedFallback(false); // ADDED
-            setFallbackStatus(''); // ADDED
+            setShowTypedFallback(false);
+            setFallbackStatus('');
             startListening();
-            if (recognitionTimeoutRef.current) { // ADDED
-                clearTimeout(recognitionTimeoutRef.current); // ADDED
-            } // ADDED
-            recognitionTimeoutRef.current = setTimeout(() => { // ADDED
-                const latestTranscript = (transcriptRef.current || '').trim(); // ADDED
-                if (latestTranscript.length === 0) { // ADDED
-                    stopListening(); // ADDED
-                    setShowTypedFallback(true); // ADDED
-                    setFallbackStatus('குரல் பதிவு கிடைக்கவில்லை. தயவுசெய்து உங்கள் கவலையை টাইப் செய்யவும்.\nNo speech transcript received. Please type the mother\'s concern.'); // ADDED
-                } // ADDED
-                recognitionTimeoutRef.current = null; // ADDED
-            }, 8000); // ADDED
+            if (recognitionTimeoutRef.current) {
+                clearTimeout(recognitionTimeoutRef.current);
+            }
+            recognitionTimeoutRef.current = setTimeout(() => {
+                const latestTranscript = (transcriptRef.current || '').trim();
+                if (latestTranscript.length === 0) {
+                    stopListening();
+                    setShowTypedFallback(true);
+                    setFallbackStatus('குரல் பதிவு கிடைக்கவில்லை. தயவுசெய்து உங்கள் கவலையை টাইப் செய்யவும்.\nNo speech transcript received. Please type the mother\'s concern.');
+                }
+                recognitionTimeoutRef.current = null;
+            }, 8000);
         }
     };
 
@@ -156,7 +156,7 @@ export default function NewVisit() {
             {showTypedFallback && (
                 <div className="w-full max-w-sm mb-6">
                     <p className="text-sm font-semibold text-brand-text mb-1">அம்மாவின் கவலையை கீழே டைப் செய்யவும்.</p>
-                    <p className="text-sm text-gray-600 mb-3">Please type the mother's concern below.</p>
+                    <p className="text-sm text-gray-600 mb-3">Please type the mother&apos;s concern below.</p>
                     {fallbackStatus ? (
                         <p className="text-sm text-red-500 font-medium whitespace-pre-line mb-3">{fallbackStatus}</p>
                     ) : null}

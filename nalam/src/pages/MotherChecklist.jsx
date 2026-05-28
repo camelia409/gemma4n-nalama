@@ -57,7 +57,7 @@ export default function MotherChecklist() {
             });
             persist(result);
             navigate(`/result/${visitId}`);
-        } catch (err) {
+        } catch {
             const hasDanger = Object.values(answers).some(v => v === true) || extraConcerns.length > 0;
             const result = {
                 is_safe: !hasDanger,
@@ -68,7 +68,7 @@ export default function MotherChecklist() {
                     ? "Refer mother to PHC immediately."
                     : "Observe mother at home.",
                 danger_signs: hasDanger ? [
-                    ...Object.entries(answers).filter(([_, v]) => v === true).map(([k]) => k),
+                    ...Object.entries(answers).filter(([, v]) => v === true).map(([k]) => k),
                     ...extraConcerns,
                 ] : [],
                 isFallback: true,

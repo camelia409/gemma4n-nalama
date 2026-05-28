@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext } from 'react';
 
-const LanguageContext = createContext();
+export const LanguageContext = createContext();
 
 export const translations = {
     tamil: {
@@ -37,6 +37,12 @@ export const translations = {
         playAudio: "ஒலிக்க கேள்",
         offlineSubtext: "சர்வர் இணைப்பு இல்லை — உள்ளூர் முடிவு பயன்படுத்தப்பட்டது",
         momConcern: "அம்மா இதைப் பற்றி கவலைப்படுகிறார்",
+        consent: {
+            title: "தரவு பதிவு ஒப்புதல்",
+            body: "இந்த செயலியை மேம்படுத்த, நீங்கள் பதிவு செய்யும் வருகை தகவல்கள் (குழந்தையின் வயது, எடை, அபாய அறிகுறிகள், AI பதில்கள்) சேமிக்கப்படும். குழந்தை அல்லது தாயின் பெயர் பகிரப்படாது. இது தானியங்கு பரிசோதனைக்கும், சேவையை மேம்படுத்தவும் மட்டுமே பயன்படும்.",
+            agree: "ஒப்புக்கொள்கிறேன்",
+            decline: "இப்போது வேண்டாம்",
+        },
         confirmTitle: "அம்மா சொன்னதை உறுதிசெய்யவும்",
         confirmSubtitle: "உங்கள் கண்களால் எதை பார்த்தீர்கள் என்பதை குறிக்கவும்.",
         motherSaid: "அம்மா சொன்னது:",
@@ -94,6 +100,12 @@ export const translations = {
         playAudio: "Listen to Audio",
         offlineSubtext: "Offline - Local Rules Applied",
         momConcern: "Mother is concerned about this",
+        consent: {
+            title: "Data logging consent",
+            body: "To improve this app, the visit details you record (baby's age, weight, danger signs, and the AI's replies) will be saved. Names of the baby or mother are not shared. This is used only for automated quality checks and to make the service better.",
+            agree: "I agree",
+            decline: "Not now",
+        },
         confirmTitle: "Confirm what the mother said",
         confirmSubtitle: "Mark anything you observe differently.",
         motherSaid: "Mother said:",
@@ -117,26 +129,6 @@ export const translations = {
             depressed: "Is the mother depressed or unusually sad?"
         }
     }
-};
-
-export const LanguageProvider = ({ children }) => {
-    const [lang, setLang] = useState(() => {
-        return localStorage.getItem('nalam_lang') || 'tamil';
-    });
-
-    const toggleLanguage = () => {
-        const newLang = lang === 'tamil' ? 'english' : 'tamil';
-        setLang(newLang);
-        localStorage.setItem('nalam_lang', newLang);
-    };
-
-    const t = translations[lang];
-
-    return (
-        <LanguageContext.Provider value={{ lang, toggleLanguage, t }}>
-            {children}
-        </LanguageContext.Provider>
-    );
 };
 
 export const useLanguage = () => useContext(LanguageContext);

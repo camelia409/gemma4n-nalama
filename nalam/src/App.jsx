@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useLanguage } from './context/LanguageContext';
 import { useConnectionStatus } from './utils/api';
+import { needsConsentDecision, grantConsent, dismissConsentForSession } from './utils/storage';
 import Home from './pages/Home';
 import NewBaby from './pages/NewBaby';
 import NewVisit from './pages/NewVisit';
@@ -8,6 +10,7 @@ import Checklist from './pages/Checklist';
 import MotherChecklist from './pages/MotherChecklist';
 import Result from './pages/Result';
 import Counselling from './pages/Counselling';
+import ConsentScreen from './pages/ConsentScreen';
 
 const LanguageToggle = () => {
   const { lang, toggleLanguage } = useLanguage();
@@ -20,10 +23,23 @@ const LanguageToggle = () => {
 
 export default function App() {
   const connectionStatus = useConnectionStatus();
+  const [showConsent, setShowConsent] = useState(needsConsentDecision());
+
+  const handleAgree = () => {
+    grantConsent();
+    setShowConsent(false);
+  };
+  const handleDecline = () => {
+    dismissConsentForSession();
+    setShowConsent(false);
+  };
 
   return (
     <BrowserRouter>
       <div>
+        {showConsent && (
+          <ConsentScreen onAgree={handleAgree} onDecline={handleDecline} />
+        )}
         {connectionStatus === 'checking' ? (
           <div className="w-full bg-amber-50 border-b border-amber-200 text-center text-sm text-amber-800 py-2 px-4">
             AI இணைப்பை சரிபார்க்கிறது... / Checking AI connection...

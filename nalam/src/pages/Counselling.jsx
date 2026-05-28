@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiCall } from '../utils/api';
 import { speak } from '../utils/audio';
+import { hasConsent } from '../utils/storage';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Counselling() {
@@ -12,68 +13,68 @@ export default function Counselling() {
 
     useEffect(() => {
         async function fetchCounselling() {
-            const safeFallbackBody = { // ADDED
-                baby: { weight: 'unknown', age_days: 3, premature: false }, // ADDED
-                danger_signs: ['unknown'], // ADDED
-                is_safe: false, // ADDED
-                mother_result: { // ADDED
-                    is_safe: false, // ADDED
-                    danger_signs: [], // ADDED
-                    tamil_message: '', // ADDED
-                    english_message: '' // ADDED
-                } // ADDED
-            }; // ADDED
+            const safeFallbackBody = {
+                baby: { weight: 'unknown', age_days: 3, premature: false },
+                danger_signs: ['unknown'],
+                is_safe: false,
+                mother_result: {
+                    is_safe: false,
+                    danger_signs: [],
+                    tamil_message: '',
+                    english_message: ''
+                }
+            };
 
             try {
-                let requestBody = safeFallbackBody; // ADDED
-                try { // ADDED
-                    const allVisits = JSON.parse(localStorage.getItem('nalam_visits') || '[]'); // ADDED
-                    const allBabies = JSON.parse(localStorage.getItem('nalam_babies') || '[]'); // ADDED
-                    const visit = [...allVisits].reverse().find(v => v?.mother_result && v?.result) || null; // ADDED
-                    const baby = visit ? allBabies.find(b => b.id === visit.babyId) : null; // ADDED
+                let requestBody = safeFallbackBody;
+                try {
+                    const allVisits = JSON.parse(localStorage.getItem('nalam_visits') || '[]');
+                    const allBabies = JSON.parse(localStorage.getItem('nalam_babies') || '[]');
+                    const visit = [...allVisits].reverse().find(v => v?.mother_result && v?.result) || null;
+                    const baby = visit ? allBabies.find(b => b.id === visit.babyId) : null;
 
-                    if (visit && baby) { // ADDED
-                        const visitDate = new Date(visit.timestamp); // ADDED
-                        const birthDate = new Date(baby.dateOfBirth); // ADDED
-                        const msPerDay = 1000 * 60 * 60 * 24; // ADDED
-                        let ageDays = Number.isFinite(visitDate.getTime()) && Number.isFinite(birthDate.getTime()) // ADDED
-                            ? Math.round((visitDate.getTime() - birthDate.getTime()) / msPerDay) // ADDED
-                            : NaN; // ADDED
+                    if (visit && baby) {
+                        const visitDate = new Date(visit.timestamp);
+                        const birthDate = new Date(baby.dob);
+                        const msPerDay = 1000 * 60 * 60 * 24;
+                        let ageDays = Number.isFinite(visitDate.getTime()) && Number.isFinite(birthDate.getTime())
+                            ? Math.round((visitDate.getTime() - birthDate.getTime()) / msPerDay)
+                            : NaN;
 
-                        if (!Number.isFinite(ageDays)) { // ADDED
-                            ageDays = parseInt(visit.day, 10); // ADDED
-                        } // ADDED
-                        if (!Number.isFinite(ageDays)) { // ADDED
-                            ageDays = 3; // ADDED
-                        } // ADDED
+                        if (!Number.isFinite(ageDays)) {
+                            ageDays = parseInt(visit.day, 10);
+                        }
+                        if (!Number.isFinite(ageDays)) {
+                            ageDays = 3;
+                        }
 
-                        requestBody = { // ADDED
-                            baby: { // ADDED
-                                weight: String(baby.weight ?? 'unknown'), // ADDED
-                                age_days: ageDays, // ADDED
-                                premature: Boolean(baby.premature ?? false) // ADDED
-                            }, // ADDED
-                            danger_signs: visit.result?.danger_signs ?? [], // ADDED
-                            is_safe: visit.result?.is_safe ?? false, // ADDED
-                            mother_result: { // ADDED
-                                is_safe: visit.mother_result?.is_safe ?? false, // ADDED
-                                danger_signs: visit.mother_result?.danger_signs ?? [], // ADDED
-                                tamil_message: visit.mother_result?.tamil_message ?? '', // ADDED
-                                english_message: visit.mother_result?.english_message ?? '' // ADDED
-                            } // ADDED
-                        }; // ADDED
-                    } // ADDED
-                } catch (storageErr) { // ADDED
-                    requestBody = safeFallbackBody; // ADDED
-                } // ADDED
+                        requestBody = {
+                            baby: {
+                                weight: String(baby.weight ?? 'unknown'),
+                                age_days: ageDays,
+                                premature: Boolean(baby.premature ?? false)
+                            },
+                            danger_signs: visit.result?.danger_signs ?? [],
+                            is_safe: visit.result?.is_safe ?? false,
+                            mother_result: {
+                                is_safe: visit.mother_result?.is_safe ?? false,
+                                danger_signs: visit.mother_result?.danger_signs ?? [],
+                                tamil_message: visit.mother_result?.tamil_message ?? '',
+                                english_message: visit.mother_result?.english_message ?? ''
+                            }
+                        };
+                    }
+                } catch {
+                    requestBody = safeFallbackBody;
+                }
 
-                const res = await apiCall('/counselling', requestBody); // CHANGED
-                setText( // CHANGED
-                    lang === 'tamil' // ADDED
-                        ? (res.tamil_counselling_text || 'தாய்ப்பால் கொடுப்பது மிகவும் முக்கியம். குழந்தையை சுத்தமாக வைத்துக்கொள்ளுங்கள்.') // CHANGED
-                        : (res.english_counselling_text || 'Breastfeeding is very important. Keep the baby clean and continue routine newborn care.') // ADDED
-                ); // ADDED
-            } catch (err) {
+                const res = await apiCall('/counselling', { ...requestBody, consent_given: hasConsent() });
+                setText(
+                    lang === 'tamil'
+                        ? (res.tamil_counselling_text || 'தாய்ப்பால் கொடுப்பது மிகவும் முக்கியம். குழந்தையை சுத்தமாக வைத்துக்கொள்ளுங்கள்.')
+                        : (res.english_counselling_text || 'Breastfeeding is very important. Keep the baby clean and continue routine newborn care.')
+                );
+            } catch {
                 setText(lang === 'tamil' ? 'சர்வர் இணைப்பு இல்லை - தயவுசெய்து பொதுவான ஆலோசனைகளை வழங்கவும்.' : 'Offline mode - Please provide general counselling guidelines based on WHO book.');
             }
             setLoading(false);
