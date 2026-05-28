@@ -12,13 +12,16 @@ If implementation code disagrees with this contract, the code is wrong.
 ### Success Response
 Fields (exact):
 - `status` (string) - service health status text.
-- `model` (string) - model/backend identifier.
+- `model` (string) - the configured text-generation model. Production uses
+  `"gemini-2.5-flash"` (Google AI Studio API, prompted — not fine-tuned). When
+  `GEMINI_API_KEY` is unset the backend returns `"rules-only-fallback"` and
+  serves template text only.
 
 Example:
 ```json
 {
   "status": "Nalam API running",
-  "model": "Gemma 4 E2B"
+  "model": "gemini-2.5-flash"
 }
 ```
 
@@ -56,6 +59,13 @@ Fields (exact):
   - `activity` (boolean) - example: `false`
   - `warmth` (boolean) - example: `true`
   - `breathing` (boolean) - example: `true`
+- `extra_concerns` (array of strings) - OPTIONAL. Free-text observations the
+  ASHA added beyond the four standard checks (e.g. `"umbilical cord smells"`).
+  If present it must be an array (wrong type → HTTP 400). Each item is stripped
+  and capped at 300 chars. Any non-empty extra concern makes the visit unsafe
+  and is appended to `danger_signs` in the response.
+- `consent_given` (boolean) - OPTIONAL. When `true`, the interaction is logged
+  (see `docs/logging_schema.md`); otherwise nothing is persisted.
 
 Example:
 ```json
@@ -71,7 +81,9 @@ Example:
     "activity": false,
     "warmth": true,
     "breathing": true
-  }
+  },
+  "extra_concerns": ["umbilical cord is red and smells"],
+  "consent_given": true
 }
 ```
 
@@ -125,6 +137,12 @@ Fields (exact):
   - `bleeding` (boolean) - example: `false`
   - `fever` (boolean) - example: `false`
   - `depressed` (boolean) - example: `false`
+- `extra_concerns` (array of strings) - OPTIONAL. Free-text maternal
+  observations beyond the three standard checks (e.g. `"painful swollen
+  breast"`). Same rules as `/assess`: must be an array if present (wrong type →
+  HTTP 400), each item stripped and capped at 300 chars, any non-empty value
+  makes the mother unsafe and is appended to `danger_signs`.
+- `consent_given` (boolean) - OPTIONAL. Gates interaction logging.
 
 Example:
 ```json
@@ -133,7 +151,9 @@ Example:
     "bleeding": false,
     "fever": false,
     "depressed": false
-  }
+  },
+  "extra_concerns": ["painful, red, swollen breast"],
+  "consent_given": true
 }
 ```
 
@@ -356,10 +376,12 @@ Alphabetical list of every field name used anywhere in this contract:
 - `breathing`
 - `breathing_concern`
 - `confidence`
+- `consent_given`
 - `danger_signs`
 - `depressed`
 - `english_counselling_text`
 - `english_message`
+- `extra_concerns`
 - `feeding`
 - `feeding_concern`
 - `fever`
