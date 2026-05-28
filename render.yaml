@@ -13,6 +13,10 @@ services:
       - key: GEMINI_API_KEY
         sync: false   # paste your Google AI Studio API key in the Render dashboard
       - key: GEMMA_MODEL
-        value: gemma-3-12b-it
-      - key: FRONTEND_ORIGIN
-        sync: false   # set this in the Render dashboard after Vercel gives you a URL
+        value: gemini-2.5-flash
+      # CORS: the production Vercel origin is hardcoded in mock_backend.py.
+      # FLASK_ENV is intentionally NOT set here, so localhost origins are
+      # disallowed in production. Set EXTRA_CORS_ORIGIN only if you add a
+      # custom domain.
+      # - key: EXTRA_CORS_ORIGIN
+      #   value: https://your-custom-domain.example

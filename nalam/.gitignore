@@ -18,6 +18,9 @@ dist.zip
 .env.local
 .env.*.local
 
+# Interaction logs (raw prompt/response capture — may contain PII)
+logs/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
