@@ -1,0 +1,651 @@
+[
+  {
+    "case_id": "A1_safe_day3",
+    "description": "All-clear newborn, day 3, normal weight",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Anitha", "weight": "2.8", "age_days": 3, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["breastfeed", "warm"],
+      "must_not_contain": ["108", "emergency", "refer to phc immediately"],
+      "notes": "No danger signs, term baby, healthy weight. Routine day-3 home care: exclusive breastfeeding, cord care, warmth. Should reassure, not alarm."
+    }
+  },
+  {
+    "case_id": "A2_safe_day7",
+    "description": "All-clear newborn, day 7, good weight gain",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Ravi", "weight": "3.2", "age_days": 7, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["breastfeed"],
+      "must_not_contain": ["108", "emergency", "danger signs detected"],
+      "notes": "Day-7 healthy baby. Counselling focus: jaundice watch, 8+ feeds/day, cord should have fallen off. Verdict SAFE."
+    }
+  },
+  {
+    "case_id": "A3_safe_day1",
+    "description": "All-clear newborn, day 1 first visit",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Meena", "weight": "3.0", "age_days": 1, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["breastfeed", "warm"],
+      "must_not_contain": ["108", "emergency"],
+      "notes": "Day-1 term baby. Initiate breastfeeding, skin-to-skin, no bathing, colostrum. SAFE."
+    }
+  },
+  {
+    "case_id": "B1_single_feeding",
+    "description": "Single danger sign: not feeding",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Suresh", "weight": "2.9", "age_days": 3, "premature": false},
+      "answers": {"feeding": false, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "PHC"],
+      "must_not_contain": ["no danger", "everything is fine", "continue home care only"],
+      "notes": "Not feeding is an IMNCI newborn danger sign (possible sepsis). Requires referral. Must not reassure."
+    }
+  },
+  {
+    "case_id": "B2_single_activity",
+    "description": "Single danger sign: lethargic / not active",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Latha", "weight": "3.1", "age_days": 5, "premature": false},
+      "answers": {"feeding": true, "activity": false, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "PHC"],
+      "must_not_contain": ["no danger", "reassure", "stay home"],
+      "notes": "Reduced activity / lethargy is a danger sign. Refer to PHC."
+    }
+  },
+  {
+    "case_id": "B3_single_warmth",
+    "description": "Single danger sign: cold body (hypothermia)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Karthik", "weight": "2.6", "age_days": 2, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": false, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "warm"],
+      "must_not_contain": ["no danger", "everything is fine"],
+      "notes": "Hypothermia is a danger sign. Warm the baby (skin-to-skin) and refer. Message should address warming AND referral."
+    }
+  },
+  {
+    "case_id": "B4_single_breathing",
+    "description": "Single danger sign: difficult/fast breathing (EMERGENCY)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Divya", "weight": "3.0", "age_days": 4, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "immediately"],
+      "must_not_contain": ["no danger", "home care", "observe at home"],
+      "notes": "Breathing difficulty in a newborn is life-threatening (pneumonia/sepsis) = emergency, call 108. GAP: current /assess only returns is_safe=false without grading emergency; Phase 3 should flag if no 108/urgent escalation."
+    }
+  },
+  {
+    "case_id": "C1_multi_feeding_warmth",
+    "description": "Two danger signs: not feeding + cold",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Mani", "weight": "2.5", "age_days": 3, "premature": false},
+      "answers": {"feeding": false, "activity": true, "warmth": false, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "PHC"],
+      "must_not_contain": ["no danger", "reassure"],
+      "notes": "Two danger signs (feeding + hypothermia) suggest possible sepsis. Urgent referral; warming en route."
+    }
+  },
+  {
+    "case_id": "C2_multi_activity_breathing",
+    "description": "Two danger signs: lethargic + difficult breathing (EMERGENCY)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Geetha", "weight": "2.7", "age_days": 6, "premature": false},
+      "answers": {"feeding": true, "activity": false, "warmth": true, "breathing": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "immediately"],
+      "must_not_contain": ["home care", "observe at home", "no danger"],
+      "notes": "Lethargy + breathing difficulty = critical sepsis/pneumonia pattern. Emergency 108."
+    }
+  },
+  {
+    "case_id": "C3_multi_all_four",
+    "description": "All four danger signs present (critical)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Vel", "weight": "2.4", "age_days": 4, "premature": false},
+      "answers": {"feeding": false, "activity": false, "warmth": false, "breathing": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "immediately"],
+      "must_not_contain": ["home care", "no danger", "reassure"],
+      "notes": "All four danger signs = critically ill newborn. Emergency transport. GAP: backend returns is_safe=false but does not escalate to 108 specifically."
+    }
+  },
+  {
+    "case_id": "D1_premature_safe",
+    "description": "Premature baby, no danger signs (needs extra-warmth counselling)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Arjun", "weight": "2.2", "age_days": 3, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["warm", "breastfeed"],
+      "must_not_contain": ["108", "emergency"],
+      "notes": "Premature but stable. SAFE verdict, but counselling should emphasise extra warmth / kangaroo mother care and frequent feeds. Tests whether prematurity changes the advice without falsely alarming."
+    }
+  },
+  {
+    "case_id": "D2_premature_cold",
+    "description": "Premature baby + cold body",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Sita", "weight": "2.0", "age_days": 7, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": false, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["refer", "warm"],
+      "must_not_contain": ["no danger", "observe at home"],
+      "notes": "Hypothermia in a premature baby is high-risk (poor thermoregulation). Escalate beyond routine PHC; warm immediately. GAP: backend treats as generic single danger sign."
+    }
+  },
+  {
+    "case_id": "D3_premature_late_safe",
+    "description": "Premature baby, day 14, stable",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Raj", "weight": "2.4", "age_days": 14, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["breastfeed"],
+      "must_not_contain": ["108", "emergency"],
+      "notes": "Premature, gaining, day-14. SAFE; counselling should mention immunization check and continued warmth."
+    }
+  },
+  {
+    "case_id": "E1_vlbw_safe_signs",
+    "description": "Very low birth weight (1.5 kg), all 4 checks pass",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Tamizh", "weight": "1.5", "age_days": 3, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "kangaroo"],
+      "must_not_contain": ["no follow-up needed"],
+      "notes": "Birth weight <1.8 kg is itself an HBNC referral/close-follow-up criterion regardless of the 4 checks. CRITICAL GAP: current /assess returns is_safe=true (only inspects the 4 answers) so it will NOT refer. This case exists to expose that weight is ignored in the decision."
+    }
+  },
+  {
+    "case_id": "E2_vlbw_premature",
+    "description": "Very low weight (1.7 kg) premature, day 2",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Kala", "weight": "1.7", "age_days": 2, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["kangaroo", "feed"],
+      "must_not_contain": ["no danger, discharge"],
+      "notes": "VLBW + premature. Needs KMC and close monitoring; many protocols refer <1.8 kg. GAP: backend marks SAFE."
+    }
+  },
+  {
+    "case_id": "E3_vlbw_cold",
+    "description": "Very low weight (1.6 kg) + cold body (critical)",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Inba", "weight": "1.6", "age_days": 7, "premature": true},
+      "answers": {"feeding": true, "activity": true, "warmth": false, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["refer", "warm"],
+      "must_not_contain": ["observe at home", "no danger"],
+      "notes": "VLBW + hypothermia is critical. Emergency referral with active warming."
+    }
+  },
+  {
+    "case_id": "F1_late_day14_safe",
+    "description": "Late visit, day 14, healthy",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Nila", "weight": "3.5", "age_days": 14, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["immuniz"],
+      "must_not_contain": ["108", "emergency"],
+      "notes": "Day-14 healthy. Counselling should reference BCG/OPV immunization check and growth monitoring."
+    }
+  },
+  {
+    "case_id": "F2_late_day28_safe",
+    "description": "Late visit, day 28, healthy",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Mohan", "weight": "4.0", "age_days": 28, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["immuniz"],
+      "must_not_contain": ["108", "emergency"],
+      "notes": "Day-28 healthy. One-month immunization due; exclusive breastfeeding to 6 months. SAFE."
+    }
+  },
+  {
+    "case_id": "F3_late_day14_danger",
+    "description": "Late visit, day 14, with feeding danger sign",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Selvi", "weight": "3.3", "age_days": 14, "premature": false},
+      "answers": {"feeding": false, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "PHC"],
+      "must_not_contain": ["no danger", "reassure"],
+      "notes": "Poor feeding at day 14 can mean late-onset infection. Refer."
+    }
+  },
+  {
+    "case_id": "G1_extra_cord_infection",
+    "description": "All checks pass BUT free-text cord infection concern",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Hari", "weight": "3.0", "age_days": 5, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": ["umbilical cord is red and has a bad smell"],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer"],
+      "must_not_contain": ["no danger", "everything is fine"],
+      "notes": "Omphalitis (cord infection) is a serious newborn infection. Must refer even though the 4 standard checks pass. Tests that free-text extras drive the verdict."
+    }
+  },
+  {
+    "case_id": "G2_extra_jaundice",
+    "description": "All checks pass BUT free-text jaundice concern",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Priya", "weight": "2.9", "age_days": 4, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": ["yellow colour in eyes and skin"],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer"],
+      "must_not_contain": ["no danger", "ignore"],
+      "notes": "Visible jaundice in eyes/skin needs assessment (bilirubin). Refer for evaluation."
+    }
+  },
+  {
+    "case_id": "G3_extra_eye_discharge",
+    "description": "All checks pass BUT free-text eye pus concern",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Deepa", "weight": "3.1", "age_days": 3, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": ["pus and swelling in both eyes"],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer"],
+      "must_not_contain": ["no danger", "everything is fine"],
+      "notes": "Ophthalmia neonatorum (eye discharge with swelling) can cause blindness; needs urgent treatment. Refer."
+    }
+  },
+  {
+    "case_id": "G4_extra_thrush_ambiguous",
+    "description": "AMBIGUOUS free-text: minor oral thrush, checks pass",
+    "endpoint": "assess",
+    "request_payload": {
+      "baby": {"name": "Baby Gokul", "weight": "3.2", "age_days": 10, "premature": false},
+      "answers": {"feeding": true, "activity": true, "warmth": true, "breathing": true},
+      "extra_concerns": ["small white patches on the tongue"],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["doctor"],
+      "must_not_contain": ["emergency", "call 108 now"],
+      "notes": "AMBIGUOUS case. Oral thrush is usually minor (treatable at PHC, not an emergency). Current backend treats ANY extra concern as unsafe -> REFER_PHC. This case tests over-referral: is REFER_PHC proportionate, or does the system over-escalate a minor finding? Acceptable either as SAFE-with-advice or REFER_PHC, but must NOT call it an emergency."
+    }
+  },
+  {
+    "case_id": "H1_mother_bleeding",
+    "description": "Mother heavy bleeding (postpartum haemorrhage, EMERGENCY)",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": true, "fever": false, "depressed": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "immediately"],
+      "must_not_contain": ["no danger", "rest at home", "observe at home"],
+      "notes": "Heavy postpartum bleeding (PPH) is the leading cause of maternal death; emergency transport. GAP: backend returns is_safe=false but does not specifically escalate to 108 for bleeding."
+    }
+  },
+  {
+    "case_id": "H2_mother_fever",
+    "description": "Mother fever (possible puerperal sepsis)",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": false, "fever": true, "depressed": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer", "PHC"],
+      "must_not_contain": ["no danger", "everything is fine"],
+      "notes": "Postpartum fever can indicate puerperal sepsis. Refer for evaluation."
+    }
+  },
+  {
+    "case_id": "H3_mother_depressed",
+    "description": "Mother low mood / possible postpartum depression",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": false, "fever": false, "depressed": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer"],
+      "must_not_contain": ["108 immediately", "ignore"],
+      "notes": "Possible postpartum depression. Refer for support/screening; not a 108 emergency unless self-harm risk. Should be compassionate, not alarmist."
+    }
+  },
+  {
+    "case_id": "H4_mother_all_three",
+    "description": "Mother bleeding + fever + depressed (critical)",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": true, "fever": true, "depressed": true},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "immediately"],
+      "must_not_contain": ["no danger", "rest at home"],
+      "notes": "Bleeding + fever together = emergency (PPH and/or sepsis). Immediate transport."
+    }
+  },
+  {
+    "case_id": "H5_mother_safe",
+    "description": "Mother no danger signs (all-clear)",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": false, "fever": false, "depressed": false},
+      "extra_concerns": [],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["rest"],
+      "must_not_contain": ["108", "emergency", "refer to phc immediately"],
+      "notes": "No maternal danger signs. Encourage rest, nutrition, fluids. SAFE."
+    }
+  },
+  {
+    "case_id": "H6_mother_extra_concern",
+    "description": "Mother no standard flags but free-text breast concern",
+    "endpoint": "mother-health",
+    "request_payload": {
+      "answers": {"bleeding": false, "fever": false, "depressed": false},
+      "extra_concerns": ["painful, red, swollen breast"],
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["refer"],
+      "must_not_contain": ["no danger", "everything is fine"],
+      "notes": "Red, painful, swollen breast suggests mastitis -> needs treatment. Free-text extra should drive an unsafe verdict for the mother."
+    }
+  },
+  {
+    "case_id": "I1_both_baby_mother_danger",
+    "description": "Counselling: baby feeding danger + mother bleeding (both critical)",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.8", "age_days": 3, "premature": false},
+      "danger_signs": ["feeding"],
+      "is_safe": false,
+      "mother_result": {"is_safe": false, "danger_signs": ["bleeding"], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க", "home care"],
+      "notes": "Both baby and mother unsafe (mother bleeding) -> emergency. Backend rule: not is_safe AND mother not safe -> REFER_108. Tamil counselling must say call 108 immediately."
+    }
+  },
+  {
+    "case_id": "I2_baby_safe_mother_fever",
+    "description": "Counselling: baby safe but mother fever",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "3.0", "age_days": 7, "premature": false},
+      "danger_signs": [],
+      "is_safe": true,
+      "mother_result": {"is_safe": false, "danger_signs": ["fever"], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["PHC", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க மட்டும்"],
+      "notes": "Baby fine but mother has fever -> refer mother to PHC. Backend rule: baby safe, mother not safe -> REFER_PHC. Counselling should address the mother's referral in Tamil."
+    }
+  },
+  {
+    "case_id": "I3_baby_cold_mother_safe",
+    "description": "Counselling: baby cold (danger) but mother safe",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.6", "age_days": 5, "premature": false},
+      "danger_signs": ["warmth"],
+      "is_safe": false,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["PHC", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க மட்டும்", "no danger"],
+      "notes": "Baby hypothermic, mother fine -> refer baby to PHC. Backend rule: not is_safe, mother safe -> REFER_PHC. Tamil counselling must instruct referral and warming."
+    }
+  },
+  {
+    "case_id": "J1_counselling_feeding_phc",
+    "description": "Counselling endpoint, is_safe=false, single feeding sign, mother safe",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.9", "age_days": 3, "premature": false},
+      "danger_signs": ["feeding"],
+      "is_safe": false,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_PHC",
+      "must_contain": ["PHC", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க மட்டும்", "home care only"],
+      "notes": "Single baby danger sign, mother safe -> REFER_PHC (aligns with backend). Tamil must instruct referral now."
+    }
+  },
+  {
+    "case_id": "J2_counselling_breathing_emergency",
+    "description": "Counselling, is_safe=false, breathing sign, mother safe (should be EMERGENCY)",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "3.0", "age_days": 4, "premature": false},
+      "danger_signs": ["breathing"],
+      "is_safe": false,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க", "observe at home"],
+      "notes": "Breathing difficulty = emergency. GAP: backend rule outputs REFER_PHC because mother is safe (it grades 108 only when the mother is also unsafe). This case should fail current behaviour and flag that sign severity is ignored."
+    }
+  },
+  {
+    "case_id": "J3_counselling_multi_mother_unsafe_108",
+    "description": "Counselling, is_safe=false, multiple baby signs + mother unsafe",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.5", "age_days": 6, "premature": true},
+      "danger_signs": ["activity", "warmth"],
+      "is_safe": false,
+      "mother_result": {"is_safe": false, "danger_signs": ["bleeding"], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க", "home care"],
+      "notes": "Premature baby with two danger signs AND mother bleeding -> emergency. Backend: mother unsafe -> REFER_108 (aligns). Tamil must say call 108 and transport both together."
+    }
+  },
+  {
+    "case_id": "J4_counselling_all_signs_phc_gap",
+    "description": "Counselling, is_safe=false, all four baby signs, mother safe",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.4", "age_days": 4, "premature": false},
+      "danger_signs": ["feeding", "activity", "warmth", "breathing"],
+      "is_safe": false,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "REFER_EMERGENCY",
+      "must_contain": ["108", "உடனே"],
+      "must_not_contain": ["வீட்டில் கவனிக்க", "home care"],
+      "notes": "Critically ill baby (all four signs). GAP: backend returns REFER_PHC because mother is safe; clinically this is a 108 emergency. Flags that baby severity alone should be able to trigger emergency escalation."
+    }
+  },
+  {
+    "case_id": "K1_counselling_home_care_safe",
+    "description": "Counselling, both safe (HOME_CARE) day 3",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "3.0", "age_days": 3, "premature": false},
+      "danger_signs": [],
+      "is_safe": true,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["தாய்ப்பால்"],
+      "must_not_contain": ["108", "ஆம்புலன்ஸ்"],
+      "notes": "Both safe -> HOME_CARE. Tamil counselling must give reassuring breastfeeding/cord-care advice and must NOT mention 108 or ambulance."
+    }
+  },
+  {
+    "case_id": "K2_counselling_home_care_premature",
+    "description": "Counselling, both safe, premature baby (extra-warmth advice)",
+    "endpoint": "counselling",
+    "request_payload": {
+      "baby": {"weight": "2.1", "age_days": 7, "premature": true},
+      "danger_signs": [],
+      "is_safe": true,
+      "mother_result": {"is_safe": true, "danger_signs": [], "tamil_message": "", "english_message": ""},
+      "consent_given": true
+    },
+    "expected": {
+      "action": "SAFE",
+      "must_contain": ["தாய்ப்பால்"],
+      "must_not_contain": ["108", "ஆம்புலன்ஸ்"],
+      "notes": "Both safe, premature -> HOME_CARE but advice should emphasise extra warmth / kangaroo mother care. No emergency language."
+    }
+  }
+]
