@@ -5,7 +5,7 @@ newborns and mothers during home visits. Tamil-first UI, voice input, works
 offline, installable on any Android phone.
 
 - **Frontend**: React + Vite + Tailwind, PWA (offline + installable)
-- **Backend**: Flask API (`nalam/mock_backend.py`). Rules make the clinical
+- **Backend**: Flask API (`nalam/backend.py`). Rules make the clinical
   safety decision; **Gemini 2.5 Flash** (via the Google AI Studio API) writes
   the Tamil + English wording. The model is **prompted, not fine-tuned**.
 - **Voice**: Browser Web Speech API in Tamil (`ta-IN`) — speech-to-text runs in
@@ -25,7 +25,7 @@ This is the honest description of what runs today:
   It is **prompted** (with an output schema + a few-shot example), **not
   fine-tuned and not trained** by us. There is **no on-device model**, **no
   RAG**, and **no multimodal/image inference** in production.
-- **Templates are the fallback.** When `GEMINI_API_KEY` is absent, the API is
+- **Templates are the fallback.** When `GOOGLE_API_KEY` is absent, the API is
   rate-limited, or the model errors, the backend returns visit-day-aware Tamil
   templates so the service stays up and clinically safe.
 - **A referral guardrail** rejects any danger-case counselling text that lacks a
@@ -57,15 +57,38 @@ when the backend is cold-starting.
 
 ## Run locally
 
+### Quick Start (Automated)
+
+**Linux/Mac:**
+```bash
+bash setup.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+.\setup.ps1
+```
+
+This automates all setup steps below and verifies production readiness.
+
+### Manual Setup
+
 ```bash
 # 1. Backend
 cd nalam
 pip install -r requirements.txt
-export GEMINI_API_KEY=<your Google AI Studio key>   # optional: omit to run templates only
-FLASK_ENV=development python mock_backend.py         # http://localhost:5000
+export GOOGLE_API_KEY=<your Google AI Studio key>   # optional: omit to run templates only
+FLASK_ENV=development python backend.py         # http://localhost:5000
 # FLASK_ENV=development is required locally so CORS allows http://localhost:5173
 
-# 2. Frontend (new terminal)
+# 2. Knowledge Base (first time only)
+cd ../knowledge_base
+pip install -r requirements.txt
+python build-index.py                               # Builds FAISS vector store
+cd ../nalam
+
+# 3. Frontend (new terminal)
 cd nalam
 cp .env.example .env                                 # VITE_API_URL=http://localhost:5000
 npm install
@@ -85,7 +108,7 @@ Push the repo to GitHub (Vercel and Render both deploy from it).
 1. <https://dashboard.render.com> → **New** → **Blueprint**.
 2. Connect the repo. Render reads [`render.yaml`](./render.yaml) and proposes a
    service named `nalam-api`.
-3. Add the secret **`GEMINI_API_KEY`** (your Google AI Studio key). Without it
+3. Add the secret **`GOOGLE_API_KEY`** (your Google AI Studio key). Without it
    the API still runs but returns templates only.
 4. Click **Apply**. When live, open `/health` — you should see
    `{"status": "Nalam API running", "model": "gemini-2.5-flash"}`
@@ -102,7 +125,7 @@ Push the repo to GitHub (Vercel and Render both deploy from it).
 3. **Deploy.**
 
 ### Step 4 — CORS
-CORS is locked down **in code** (`mock_backend.py`): the production Vercel origin
+CORS is locked down **in code** (`backend.py`): the production Vercel origin
 is the only allowed origin; localhost is allowed only when
 `FLASK_ENV=development`. There is nothing to configure in the Render dashboard
 for CORS. (The old `FRONTEND_ORIGIN` env var is no longer used.)
@@ -129,10 +152,10 @@ full-screen, works offline, and the Tamil mic uses the phone's microphone.
 | Path | What it is |
 |---|---|
 | `nalam/src/` | React app (pages, hooks, context, utils) |
-| `nalam/mock_backend.py` | Flask API: rules + Gemini text generation + template fallback |
+| `nalam/backend.py` | Flask API: rules + Gemini text generation + template fallback |
 | `nalam/src/utils/api.js` | Reads `VITE_API_URL` |
 | `API_CONTRACT.md` | Request/response shapes (source of truth) |
-| `docs/logging_schema.md` | Interaction-logging schema (v1.0) |
+| `docs/logging-schema.md` | Interaction-logging schema (v1.0) |
 | `eval/` | Eval set + scoring runner |
 | `render.yaml` / `vercel.json` | Deploy configs |
 | `nalama-gemma4-tamil-*.ipynb` | **Experimental** Gemma 3n E2B notebook — an alternative backend, **not** what production runs |

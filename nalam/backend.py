@@ -6,7 +6,7 @@ an automatic fallback when the API is unavailable, rate-limited, or returns
 malformed JSON, so the service stays clinically safe under failure.
 
 Env vars:
-    GEMINI_API_KEY    — Google AI Studio key. If absent, falls back to templates.
+    GOOGLE_API_KEY    — Google AI Studio key. If absent, falls back to templates.
     GEMMA_MODEL       — model id, default "gemma-3-12b-it".
     FLASK_ENV         — set to "development" to also allow localhost CORS origins.
     EXTRA_CORS_ORIGIN — optional single extra allowed origin (e.g. custom domain).
@@ -19,13 +19,28 @@ import re
 import sys
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+# Import RAG retriever for knowledge base context injection
+try:
+    # Add knowledge_base to path so we can import retriever
+    # Note: __file__ is nalam/backend.py, so parent.parent is project root
+    kb_path = str(Path(__file__).parent.parent / "knowledge_base")
+    sys.path.insert(0, kb_path)
+    import retriever
+    _rag_available = True
+    print(f"[RAG] Knowledge base path: {kb_path}", file=sys.stderr)
+except ImportError as e:
+    print(f"[RAG] Retriever not available: {e} — backend will use zero-shot generation", file=sys.stderr)
+    retriever = None
+    _rag_available = False
+
 # ----- Interaction logging ---------------------------------------------------
 # Every /assess and /counselling call is appended to logs/interactions.jsonl
-# (one JSON object per line), following the schema in docs/logging_schema.md.
+# (one JSON object per line), following the schema in docs/logging-schema.md.
 # Salient fields (visit_day, weight, danger_flags, extra_concerns) are promoted
 # to the top level for easy querying (Phase 4 trend tracking); the full
 # request_payload is also retained so the eval set (Phase 1.4) can replay exact
@@ -84,7 +99,7 @@ def _extract_context(request_payload):
 
 
 def log_interaction(endpoint, request_payload, response_payload, gemma_prompt=None):
-    """Append one schema-v1.0 interaction record (see docs/logging_schema.md)."""
+    """Append one schema-v1.0 interaction record (see docs/logging-schema.md)."""
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
         if not isinstance(request_payload, dict):
@@ -135,10 +150,10 @@ def _get_client():
     global _genai_client, _genai_unavailable
     if _genai_client is not None or _genai_unavailable:
         return _genai_client
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         _genai_unavailable = True
-        print("GEMINI_API_KEY not set — falling back to templates", file=sys.stderr)
+        print("GOOGLE_API_KEY not set — falling back to templates", file=sys.stderr)
         return None
     try:
         from google import genai
@@ -312,6 +327,14 @@ if _extra_origin and _extra_origin != "*":
 
 CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
 print(f"CORS allowed origins ({'development' if _is_dev else 'production'}): {ALLOWED_ORIGINS}", file=sys.stderr)
+
+# Load RAG knowledge base at startup
+if retriever is not None:
+    if retriever.load_index():
+        _rag_available = True
+        print("[OK] RAG knowledge base loaded successfully", file=sys.stderr)
+    else:
+        print("[WARNING] RAG knowledge base not available — counselling will use zero-shot generation", file=sys.stderr)
 
 
 # ----- Tamil/English copy banks (fallback when Gemma unavailable) -----------
@@ -685,7 +708,32 @@ def counselling():
         if mother_extras:
             extras_clause += f" The ASHA additionally observed about the mother: {'; '.join(mother_extras)}."
 
+        # RAG retrieval: retrieve relevant chunks from knowledge base before building prompt
+        rag_context = ""
+        if _rag_available and retriever is not None:
+            try:
+                # Build a focused retrieval query from visit parameters
+                rag_query = retriever.build_rag_query(
+                    danger_signs=danger_signs,
+                    visit_day=age_days,
+                    baby_weight=weight_kg,
+                    extra_concerns=extra_baby + mother_extras if (extra_baby or mother_extras) else None
+                )
+
+                # Retrieve top 4 relevant chunks
+                retrieved_chunks = retriever.retrieve(rag_query, top_k=4)
+
+                # Format and inject into prompt
+                if retrieved_chunks:
+                    rag_context = retriever.format_context(retrieved_chunks)
+                    print(f"[RAG] Retrieved {len(retrieved_chunks)} chunks for counselling", file=sys.stderr)
+            except Exception as e:
+                print(f"[ERROR] RAG retrieval in /counselling: {e}", file=sys.stderr)
+                # Continue with zero-shot generation if RAG fails
+
+        # Build prompt with optional RAG context prepended
         prompt = (
+            f"{rag_context}"
             f"You are a Tamil HBNC assistant. Generate a counselling script in BOTH Tamil and English. "
             f"Context: day-{age_days} postnatal visit, baby weight {weight_kg} kg, "
             f"premature={premature}, baby standard danger signs: {signs_e}, mother is {mother_state}."

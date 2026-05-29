@@ -14,7 +14,7 @@ Fields (exact):
 - `status` (string) - service health status text.
 - `model` (string) - the configured text-generation model. Production uses
   `"gemini-2.5-flash"` (Google AI Studio API, prompted — not fine-tuned). When
-  `GEMINI_API_KEY` is unset the backend returns `"rules-only-fallback"` and
+  `GOOGLE_API_KEY` is unset the backend returns `"rules-only-fallback"` and
   serves template text only.
 
 Example:
@@ -65,7 +65,7 @@ Fields (exact):
   and capped at 300 chars. Any non-empty extra concern makes the visit unsafe
   and is appended to `danger_signs` in the response.
 - `consent_given` (boolean) - OPTIONAL. When `true`, the interaction is logged
-  (see `docs/logging_schema.md`); otherwise nothing is persisted.
+  (see `docs/logging-schema.md`); otherwise nothing is persisted.
 
 Example:
 ```json

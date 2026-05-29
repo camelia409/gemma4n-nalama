@@ -3,10 +3,10 @@
 Run the Nalam eval set against the live API and score each case Y/N.
 
 Usage:
-    python run_eval.py                 # run against the default live API
-    python run_eval.py --base-url URL  # run against a different backend
-    python run_eval.py --dry-run       # validate eval_set.json structure only
-    python run_eval.py --delay 4.5     # seconds between calls (Gemini free tier
+    python evaluate.py                 # run against the default live API
+    python evaluate.py --base-url URL  # run against a different backend
+    python evaluate.py --dry-run       # validate eval-set.json structure only
+    python evaluate.py --delay 4.5     # seconds between calls (Gemini free tier
                                         # is ~15 req/min, so keep >= 4s)
 
 Outputs:
@@ -38,7 +38,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).parent
-EVAL_FILE = HERE / "eval_set.json"
+EVAL_FILE = HERE / "eval-set.json"
 RESULTS_JSON = HERE / "results.json"
 RESULTS_MD = HERE / "results_summary.md"
 DEFAULT_BASE_URL = "https://nalam-api-h62b.onrender.com"

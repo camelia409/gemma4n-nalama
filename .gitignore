@@ -27,3 +27,8 @@ dist.zip
 .DS_Store
 .vscode/
 .idea/
+
+# Added by agent
+knowledge_base/embeddings/
+nalam/logs/
+*.log
