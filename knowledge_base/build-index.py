@@ -65,8 +65,8 @@ class HBNCKnowledgeBaseBuilder:
         """
         self.api_key = api_key
         self.dry_run = dry_run
-        self.raw_dir = Path("knowledge_base/raw")
-        self.output_dir = Path("knowledge_base/embeddings")
+        self.raw_dir = Path(__file__).parent / "raw"
+        self.output_dir = Path(__file__).parent / "embeddings"
         self.chunks: List[Dict] = []
         self.embeddings: List[List[float]] = []
 
